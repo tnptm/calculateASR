@@ -17,6 +17,11 @@ class settings:
     yperiods = []
     numofperiods = []
     periodsastext = ""
+    agegroupdef = {
+            "0-4": 1,"5-9": 2,"10-14": 3,"15-19": 4,"20-24": 5,"25-29": 6,"30-34": 7,"35-39": 8,"40-44": 9,
+            "45-49": 10,"50-54": 11,"55-59": 12,"60-64": 13,"65-69": 14,"70-74": 15,"75-79": 16,"80-84": 17, "85+":18,
+            }
+    
     #agegroups = 1-18 # default 1-18: 0-4,5-9,...,85+
     def __init__(self,startyear = 0,endyear = 0,perdiff = 0, perlen=0, psastxt=""):
         if perdiff > 0 and startyear > 0 and endyear > 0:
@@ -68,12 +73,17 @@ class populationdata:
         return
 
 
-#class calculator:
-#    def __init__(self,popobj,settingsobj,casesobj,gender):
+class calculator:
+    def __init__(self,popobj,settingsobj,casesobj,gender):
         #prepare calc
+
         #init calc
+
         #result obj?
 
+    def np_calcASR(n_pop, n_cases, n_wstd):
+        # Numpy arrays in one line (many years already aggregated to one row)
+        return sum(n_wstd * n_cases/ n_pop)*100000
 #class results:
     #collect results as strcture (json) object: [cancer type: {result}]
     #save data as json or text? (json is possible to upload directly to other compatible system)
