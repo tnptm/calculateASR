@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
+import sys
 
 def Version():
     return "0.1/30042023 toni.patama@gmail.com"
 
-class predefs:
+class Predefs:
     age_stds = {'world':[12,10,9,9,8,8,6,6,6,6,5,4,4,3,2,1,.5,.5]}
     agegroupdef = {
         "0-4": 1,"5-9": 2,"10-14": 3,"15-19": 4,"20-24": 5,"25-29": 6,"30-34": 7,"35-39": 8,"40-44": 9,
         "45-49": 10,"50-54": 11,"55-59": 12,"60-64": 13,"65-69": 14,"70-74": 15,"75-79": 16,"80-84": 17, "85+":18,
     }
-    def __init__(self,unitratio):
+    def __init__(self,unitratio = 100000):
         self.unitratio = unitratio # res: 1/100000 persons
 
         
@@ -84,7 +85,7 @@ class DataLoad:
     
 
 
-class Runsettings(predefs):
+class Runsettings(Predefs):
     #definitions
     age_std_selected = ""
     #calculation specific definitions
@@ -129,10 +130,14 @@ class Runsettings(predefs):
         return 0
     #def generatePeriodsAuto(self,population_data)
 
+# calculation function. Every parameter should be readable from public Objects: datas, settings
+def calcASR(): #popdt,casedt):
+    popdt = popdtObj.data
+    casedt = casedtObj.data
+    gender = settingsobj.gender
+    periods = settingsobj.periods # needed to implement!!!
 
-def calcASR(popdt,casedt):
-
-    def run_calc(self):
+    def run_calc():
 
         resultsp = {}
         resultsc = {}
@@ -183,14 +188,18 @@ def calcASR(popdt,casedt):
     def save_resultsTocsv(self,fn=None):
         r_final.to_csv(path_or_buf='result_test.csv')
 
+    run_calc()
 
+
+# Main function for single run
 def start_main(gender,popfile,casefile):
     popdtObj = DataLoad("pop", popfile)
     # loop this function when making several similar calculations of list of 
     settingsobj = Runsettings(gender,popfile,casefile,header)
     calcASR(popdt)
 
-
+def runFromCommanLine():
+    print("Not implemented yet")
 
 # municipality list: All
 #r_final = popdt[['municid','sex']].groupby('municid').agg('sex').reset_index()
@@ -205,7 +214,17 @@ def help():
     Help:
     
     """)
+    print(Version())
 
 
-#if __name__ == '__main__':
-   # start_main()
+if __name__ == '__main__':
+    # test if run by commandline
+    if len(sys.argv) and (len(sys.argv)<3 or "-h" in sys.argv):
+        help()
+    elif len(sys.argv) and len(sys.argv)>=3:
+        start_main(*sys.argv)
+    else:    
+        Print("""
+    No Arguments Try Again. "-h" for help
+    """)
+    # else run as python module directly
