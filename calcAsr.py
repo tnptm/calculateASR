@@ -3,7 +3,8 @@ import pandas as pd
 import sys
 
 def Version():
-    return "0.1/30042023 toni.patama@gmail.com"
+    return "a0.2/02062023 toni.patama@gmail.com"
+    #30042023 toni.patama@gmail.com"
 
 class Predefs:
     age_stds = {'world':[12,10,9,9,8,8,6,6,6,6,5,4,4,3,2,1,.5,.5]}
@@ -67,22 +68,6 @@ class DataLoad:
             return False
 
 
-#class CaseData(DataLoad):
-#    def __init__(self,**kwds): #filename,fs=",",header = False):
-#        super().__init__(**kwds)
-
-#class PopulationDt(DataLoad):
-#    def __init__(self,**kwds): #filename,fs=",",header = False):
-#        super().__init__(**kwds)
-#        self.data.columns = ['cntryid','year','sex','agegroup','municid','cases']
-
-
-#class Cases:
-#    def __init__(self,filename,fs=",",header = False):
-#        self.casedt = pd.read_csv(filename,header)
-#    def selPopByGender(self,gender)
-#        return self.casedt[(casedt.sex == gender)] if gender < 2 else casedt
-    
 
 
 class Runsettings(Predefs):
@@ -94,8 +79,8 @@ class Runsettings(Predefs):
     gender = 2 # 0 Male, 1 Female
     
 
-    def __init__(self,sex,popfilename,casefilename,popstd = 'world',agegroups = "1-18"): # 1-3,5,7-9...
-        super().__init__(unitratio = 100000)
+    def __init__(self, sex, popfilename, casefilename, popstd='world', agegroups="1-18",unitratio=100000):  #agegroups 1-3,5,7-9...
+        super().__init__(unitratio)
         """
          preparations
         """
@@ -105,13 +90,16 @@ class Runsettings(Predefs):
 
         # gen dataframe having indexis for pop stantard
         aglist = super().age_stds[popstd]
-        s = pd.DataFrame(index=list(range(1,len(aglist)))) #
-        self.age_std_selected = s.join(super().age_stds[popstd])
+        #print(aglist)
+        s = pd.DataFrame(index=list(range(0,len(aglist)))) #
+        self.age_std_selected = s.join(pd.DataFrame(aglist),rsuffix='agestd_')
+        self.age_std_selected.columns = ['wstdi']
+
         self.popfile = popfilename
         self.casefile = casefilename
 
    
-    def gen_ag_list(agdef):
+    def gen_ag_list(self,agdef):
         """
         parses agegroup seleciton argument
         """
@@ -126,12 +114,40 @@ class Runsettings(Predefs):
                 narr.append(aglist)
         return narr
     
-    def generatePeriodsAuto(self,population_data):
-        return 0
+    def generatePeriodsAuto(self,population_data,periodlen,yearstep):
+        ''' 
+        periods are calculated based on so, that last periods are full periods. That's why last period is calculated 1st. Result is reversed in the end.
+        '''
+        miny = min(population_data.year)
+        maxy = max(population_data.year)
+        periods = []
+#        for yend in range(miny+1,maxy,yearstep):
+        print("\nPeriods:")
+        for yend in range(maxy,miny+1,-yearstep):
+            prow=[]
+            start_year = yend-periodlen+1
+            end_year = yend
+            if start_year < miny and start_year + yearstep > miny:
+                prow.append(miny)
+                prow.append(end_year)
+                periods.append(prow)
+                print(prow)
+            elif start_year >= miny:
+                prow.append(start_year)
+                prow.append(end_year)
+                periods.append(prow)
+                print(prow)
+            else:
+                #print(start_year,end_year)
+                break
+        periods.reverse()
+        self.periods = periods
+        print("\n")
+    
     #def generatePeriodsAuto(self,population_data)
 
 # calculation function. Every parameter should be readable from public Objects: datas, settings
-def calcASR(): #popdt,casedt):
+def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
     popdt = popdtObj.data
     casedt = casedtObj.data
     gender = settingsobj.gender
@@ -149,6 +165,7 @@ def calcASR(): #popdt,casedt):
         #r_final.set_index('municid')
 
         i = 0
+        print("Calculating...")
         for yper in periods:
             print(f"Start: {str(yper[0])} - End: {str(yper[1])}" )
             keynm = "k_" +str(i) #results[yper[0]] = []
@@ -163,12 +180,12 @@ def calcASR(): #popdt,casedt):
             merged_res = resultsp[keynm].merge(resultsc[keynm], left_on=['municid', 'agegroup'], right_index=True)
             
             # Add agestd weight by age group using wstdi (pd.dataframe)
-            r = merged_res.merge(wstdi, left_on=['agegroup'], right_index=True).reset_index()
+            r = merged_res.merge(settingsobj.age_std_selected.wstdi  , left_on=['agegroup'], right_index=True).reset_index()
             
             # calc age stantard rate
             #numpy: rate = sum(np_r[:,1] * np_r[:,2] / np_r[:,0])*100000
             # pandas: 
-            r['rateweights'] = r['cases'] * r['wstd'] / r['pop'] * unitratio # result: 1/100000 persons
+            r['rateweights'] = r['cases'] * r['wstdi'] / r['pop'] * settingsobj.unitratio # result: 1/100000 persons
             r_grp = r[['municid','rateweights']].groupby('municid').sum('rateweights').reset_index()
             #tmpres[keynm] = r_grp
             # result should look like: municid, period1,...,periodN
@@ -182,21 +199,40 @@ def calcASR(): #popdt,casedt):
 
         # reset index and replace Nans with zero (no value here means zero value, it has meaning, because 
         # we know that it is not measeure problem but real situation, where no cases exist
-        r_final=r_final.rename({'municid': 'municid_'},axis='columns')
-        r_final.reset_index().fillna(0)
-    
-    def save_resultsTocsv(self,fn=None):
-        r_final.to_csv(path_or_buf='result_test.csv')
+        r_final = r_final.rename({'municid': 'municid_'}, axis='columns')
+        r_final = r_final.reset_index().fillna(0)
 
-    run_calc()
+        # drop extra column 'municid_' and setting the main column 'municid' as index
+        # and return
+        print("The calculation went fine...")
+        return r_final.drop(columns='municid_').set_index('municid')
+            
+    def save_resultsTocsv(pddfresult, fn):
+        # fn = filename to save rates using pandas
+        print("Saving the result..")
+        pddfresult.to_csv(path_or_buf=fn, na_rep='0.0')
+        #r_final.to_csv(path_or_buf='result_test.csv')
+
+    result = run_calc()
+    save_resultsTocsv(result,"./incs/inc_" + settingsobj.casefile)
+    print("Quiting..")
+    return result
 
 
 # Main function for single run
-def start_main(gender,popfile,casefile):
-    popdtObj = DataLoad("pop", popfile)
+
+def start_main(gender, popfilename, casefilename, popstd, agegroups, periods=None, periodlength=5, periodstep=2):
+    popdtObj = DataLoad("pop", popfilename)
+    casedtObj = Dataload("case", casefilename)
     # loop this function when making several similar calculations of list of 
-    settingsobj = Runsettings(gender,popfile,casefile,header)
-    calcASR(popdt)
+    # settings class init: sex,popfilename,casefilename,popstd = 'world',agegroups 1-18
+    settingsobj = Runsettings(gender, popfilename, casefilename, popstd, agegroups ) 
+    if periods == None:
+        settingsobj.generatePeriodsAuto( popdata.data, periodlength, periodstep )
+    else:
+        settingsobj.periods = periods
+    result = calcASR(popdtObj,casedtObj,settngsobj)
+    return result
 
 def runFromCommanLine():
     print("Not implemented yet")
@@ -222,7 +258,7 @@ if __name__ == '__main__':
     if len(sys.argv) and (len(sys.argv)<3 or "-h" in sys.argv):
         help()
     elif len(sys.argv) and len(sys.argv)>=3:
-        start_main(*sys.argv)
+        runFromCommanLine(*sys.argv)
     else:    
         Print("""
     No Arguments Try Again. "-h" for help
