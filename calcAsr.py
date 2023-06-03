@@ -224,7 +224,7 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
     def save_resultsTocsv(pddfresult, fn):
         # fn = filename to save rates using pandas
         print("Saving the result..")
-        pddfresult.to_csv(path_or_buf=fn, na_rep='0.0')
+        pddfresult.to_csv(path_or_buf=fn, na_rep='0.0', float_format="%.4f")
         #r_final.to_csv(path_or_buf='result_test.csv')
 
     result = run_calc()
