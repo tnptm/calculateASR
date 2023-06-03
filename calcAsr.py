@@ -7,7 +7,11 @@ def Version():
     #30042023 toni.patama@gmail.com"
 
 class Predefs:
-    age_stds = {'world':[12,10,9,9,8,8,6,6,6,6,5,4,4,3,2,1,.5,.5]}
+    age_stds = pd.DataFrame({
+        'agegroup_index':list(range(1,19)),
+        'world':[0.12,.10,.09,.09,.08,.08,.06,.06,.06,.06,.05,.04,.04,.03,.02,.01,.005,.005],
+        'europe':[.08,.07,.07,.07,.07,.07,.07,.07,.07,.07,.07,.06,.05,.04,.03,.02,.01,.01]
+        })
     agegroupdef = {
         "0-4": 1,"5-9": 2,"10-14": 3,"15-19": 4,"20-24": 5,"25-29": 6,"30-34": 7,"35-39": 8,"40-44": 9,
         "45-49": 10,"50-54": 11,"55-59": 12,"60-64": 13,"65-69": 14,"70-74": 15,"75-79": 16,"80-84": 17, "85+":18,
@@ -49,7 +53,7 @@ class DataLoad:
     
     # return data from object using sex
     def selPopByGender(self,gender):
-        return self.data[(data.sex == gender)] if gender < 2 else data
+        return self.data[(self.data.sex == gender)] if gender < 2 else data
 
     # Test: is header having numbers as column names = "it means the same that pd.dataframe generated column names by number"
     def fileHasHdr(self,filename = False):
@@ -76,7 +80,7 @@ class Runsettings(Predefs):
     #calculation specific definitions
      # default = All. You can limit using start and end key of "agegroupdef"
     periods = [] #[[1998,2002],[2001,2005],[2004,2008],[2007,2012]]
-    gender = 2 # 0 Male, 1 Female
+    #gender = 2 # 0 Male, 1 Female
     
 
     def __init__(self, sex, popfilename, casefilename, popstd='world', agegroups="1-18",unitratio=100000):  #agegroups 1-3,5,7-9...
@@ -89,11 +93,12 @@ class Runsettings(Predefs):
         self.gender = sex # 0,1,2=both
 
         # gen dataframe having indexis for pop stantard
-        aglist = super().age_stds[popstd]
+        #self.age_stds_2 = super().age_stds
+        self.age_std_selected = ['agegroup_index',popstd]
         #print(aglist)
-        s = pd.DataFrame(index=list(range(0,len(aglist)))) #
-        self.age_std_selected = s.join(pd.DataFrame(aglist),rsuffix='agestd_')
-        self.age_std_selected.columns = ['wstdi']
+        #s = pd.DataFrame(list(range(1,len(aglist)+1))) #
+        #self.age_std_selected = s.join(pd.DataFrame(aglist),rsuffix='agestd_')
+        #self.age_std_selected.columns = ['wstdi']
 
         self.popfile = popfilename
         self.casefile = casefilename
@@ -148,10 +153,13 @@ class Runsettings(Predefs):
 
 # calculation function. Every parameter should be readable from public Objects: datas, settings
 def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
-    popdt = popdtObj.data
-    casedt = casedtObj.data
+    # datas selected by gender (data obj have usually bot sexes)
+    popdt = popdtObj.selPopByGender(settingsobj.gender)
+    casedt = casedtObj.selPopByGender(settingsobj.gender)
+
+    # for simplicity
     gender = settingsobj.gender
-    periods = settingsobj.periods # needed to implement!!!
+    periods = settingsobj.periods # done 
 
     def run_calc():
 
@@ -177,19 +185,25 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
             
             
             # Merge pop and cases correspondig rows by municid and agegroup
-            merged_res = resultsp[keynm].merge(resultsc[keynm], left_on=['municid', 'agegroup'], right_index=True)
+            merged_res = resultsp[keynm].merge(resultsc[keynm], left_on=['municid', 'agegroup'], right_index=True).reset_index()
+            #print(merged_res)
             
             # Add agestd weight by age group using wstdi (pd.dataframe)
-            r = merged_res.merge(settingsobj.age_std_selected.wstdi  , left_on=['agegroup'], right_index=True).reset_index()
+            #r = merged_res.merge(settingsobj.age_stds[settingsobj.age_std_selected]  , left_on=['agegroup'], right_on=['agegroup_index']).reset_index()
+            r = merged_res.merge(settingsobj.age_stds[settingsobj.age_std_selected], left_on=['agegroup'], right_on = ['agegroup_index'])
             
             # calc age stantard rate
             #numpy: rate = sum(np_r[:,1] * np_r[:,2] / np_r[:,0])*100000
             # pandas: 
-            r['rateweights'] = r['cases'] * r['wstdi'] / r['pop'] * settingsobj.unitratio # result: 1/100000 persons
+            r['rateweights'] = r['cases'] * r[settingsobj.age_std_selected[1]] / r['pop'] * settingsobj.unitratio # result: 1/100000 persons
+            
+            # For debug
+            # print(r)
             r_grp = r[['municid','rateweights']].groupby('municid').sum('rateweights').reset_index()
+            
             #tmpres[keynm] = r_grp
             # result should look like: municid, period1,...,periodN
-            fieldname = f"{str(yper[0])}-{str(yper[0])}"
+            fieldname = f"{str(yper[0])}-{str(yper[1])}"
             #r_grp.rename({'rateweights':fieldname}, axis='columns')
             r_grp = pd.DataFrame({ fieldname: list(r_grp['rateweights'])},index=list(r_grp['municid']))
             tmpres[keynm] = r_grp
