@@ -1,55 +1,117 @@
 import numpy as np
 import pandas as pd
 import sys
+import os.path
+
+#print(sys.argv)
 
 def Version():
-    return "b0.3/03062023 toni.patama@gmail.com"
+    return "b0.3/07072023 toni.patama@gmail.com"
     #30042023 toni.patama@gmail.com"
 
 class Predefs:
     age_stds = pd.DataFrame({
-        'agegroup_index':list(range(1,19)),
-        'world':[0.12,.10,.09,.09,.08,.08,.06,.06,.06,.06,.05,.04,.04,.03,.02,.01,.005,.005],
-        'europe':[.08,.07,.07,.07,.07,.07,.07,.07,.07,.07,.07,.06,.05,.04,.03,.02,.01,.01]
+        'agegroup_index' : list(range(1,19)),
+        'world' : [ 0.12, .10, .09, .09, .08, .08, .06, .06, .06, .06, .05, .04, .04, .03, .02, .01, .005, .005 ],
+        'europe' : [ .08, .07, .07, .07, .07, .07, .07, .07, .07, .07, .07, .06, .05, .04, .03, .02, .01, .01 ]
         })
     agegroupdef = {
         "0-4": 1,"5-9": 2,"10-14": 3,"15-19": 4,"20-24": 5,"25-29": 6,"30-34": 7,"35-39": 8,"40-44": 9,
         "45-49": 10,"50-54": 11,"55-59": 12,"60-64": 13,"65-69": 14,"70-74": 15,"75-79": 16,"80-84": 17, "85+":18,
     }
+    data_hdr_info = {
+        "pop":  {
+                    'year': "Population year",
+                    'sex': "Gender (0:male,1:female,2:both,3:unspecified)",
+                    'agegroup': "Population age group (5-year) by gender (1-18)",
+                    'municid': "Municipality number or any geographical unit",
+                    'pop': "Population or population weight or similar weight"
+                },
+        "case": {
+                    'year': "Diagnose year",
+                    'sex': "Gender (0:male,1:female,2:both,3:unspecified)",
+                    'agegroup': "5-year age group where the person is at diagnose (1-18)",
+                    'municid': "Municipality number or any geographical unit",
+                    'cases': "Diagnose, death or other cases in aggregated groups" 
+                }
+    }
+
+    def printHeaderInfo(self,type):
+        hdrInfo = self.data_hdr_info[type]
+        for columnName,columnInfo in hdrInfo.items():
+            print(f"{columnName} : {columnInfo}\n")
+
     def __init__(self,unitratio = 100000):
         self.unitratio = unitratio # res: 1/100000 persons
 
 # data loading class for population weights and cases        
 class DataLoad:
-    def __init__(self,dataname = False, filename = False, fs=","):
-        self.header = self.fileHasHdr(filename)
+    data=[]
+    def __init__(self,dataname = None, filename = False, fs=","):
+        self.predefs = Predefs()
+        self.header = self.fileHasHdr(filename) ## Should require header in csv, because then data can be real pandas dataframe
         self.fieldsep = fs
-        self.label = dataname # "case"/"pop" 
-        if filename:
+        
+        if dataname:
+            self.label = dataname # "case"/"pop" 
+        
+        if not filename:
+            self.fatalError(f"loading data '{self.label}'",f"No filename '{filename}' exist, please check your PATH!")
+        
+        self.filename = filename
+    
+    def execute(self):
+        if self.filename:
             if self.header:
-                self.data = pd.read_csv(filename)
-            else:
-                self.data = pd.read_csv(filename,header=self.header)
-            self.filename = filename
-            #self.header = test_hdr() # does input really have the header?
-            self.setColumns()
-            self.fixAgeGroups()
-        else:
-            self.data = []
+                try:
+                    print(f"\n* Loading data from {self.filename}")
+                    self.data = pd.read_csv(self.filename, header=0, sep=self.fieldsep)
+                except Exception as error:
+                    print(error)
 
-    # Check agegroups are correct
+                if len(self.data)>0:
+                    chk=self.csvHeaderCheck()
+                    self.fixAgeGroups() if chk else self.fatalError(f"Checking header of '{self.filename}'","\tFailed!\n")
+
+                else:
+                    self.fatalError(f"Loading '{self.label}' Data","\tNo data loaded!\n")
+            else:
+                self.predefs.printHeaderInfo(self.label)
+                self.fatalError(f"Loading '{self.label}' Data","\tCSV file doesn't have required header.\n")
+                
+                #print("\tCSV file doesn't have required header.\n")  # order of the columns are not exact,but names of the columns yes. 
+                #                                                       # (cntryid is not required in this version)!
+                #print("Quitting because of errors...")
+                #sys.sys.exit() # quitting because of errors
+                #self.data = pd.read_csv(filename,header=self.header)
+            #self.header = test_hdr() # does input really have the header?
+            #self.setColumns() 
+        else:
+            #self.data = []
+            self.fatalError(f"Loading '{self.label}' Data","\tNo data loaded!\n",True)
+
+    # Fatal error message for dataload class
+    def fatalError(errorLabel, msg, kill = False):
+        print(f"Error in {errorLabel}: \n  Error message: {msg}\n") 
+        print("    Please, fix before continue!")
+        print("Exiting...")
+        if kill:
+            sys.exit()
+    
+
+    # Check agegroups are correct [1-18] instead of [0-17]
     def fixAgeGroups(self):
         if min(self.data.agegroup) == 0 and max(self.data.agegroup == 17):
             self.data.agegroup += 1
         elif min(self.data.agegroup) == 0 and max(self.data.agegroup == 18):
             print("Error: Data have 19 agegroups.")
-            quit()
+            return None
 
-    def setColumns(self):
-        if self.label == "case" and not self.header:
-            self.data.columns = ['cntryid','year','sex','agegroup','municid','cases']
-        elif self.label == "pop" and not self.header:
-            self.data.columns = ['cntryid','year','sex','agegroup','municid','pop']
+#    def setColumns(self):
+#        if self.label == "case" and not self.header:
+#            self.data.columns = ['cntryid','year','sex','agegroup','municid','cases']
+#        elif self.label == "pop" and not self.header:
+#            self.data.columns = ['cntryid','year','sex','agegroup','municid','pop']
     
     # return data from object using sex
     def selPopByGender(self,gender):
@@ -71,7 +133,23 @@ class DataLoad:
         else:
             return False
 
-
+    # check that headers are correct, do files have correct columns?
+    def csvHeaderCheck(self):
+        #predefs = Predefs()
+        if self.header and self.label :
+            print(f"\nChecking columns for '{self.label}':")
+            for col in self.predefs.data_hdr_info[self.label]:
+                infostr = f"  {col}:   \t"
+                if col in self.data.columns:  #self.predefs.data_hdr_info[self.label]:
+                    print(f"{infostr}OK")
+                else:
+                    print(f"{infostr}False..")
+                    print(f"Header error:\n  Required column:\n\n  '{col}' : [{self.predefs.data_hdr_info[self.label][col]}]\n\n  doesn't exist or is in wrong format in {self.label}-data.\n\n")
+                    return False
+            return True
+        else:
+            print("Header error:\n Header and/or data name ('pop' or 'case') are not defined.")
+            return None
 
 
 class Runsettings(Predefs):
@@ -83,7 +161,7 @@ class Runsettings(Predefs):
     #gender = 2 # 0 Male, 1 Female
     
 
-    def __init__(self, sex, popfilename, casefilename, popstd='world', agegroups="1-18",unitratio=100000):  #agegroups 1-3,5,7-9...
+    def __init__(self, sex, popfilename, casefilename, popstd='world', agegroups="1-18",unitratio=100000, outputfn = "stdout"):  #agegroups 1-3,5,7-9...
         super().__init__(unitratio)
         """
          preparations
@@ -99,7 +177,7 @@ class Runsettings(Predefs):
         
         self.popfile = popfilename
         self.casefile = casefilename
-
+        self.output = outputfn # default is printing to screen, if filename is not defined. If file exist, this should ask to overwrite
    
     def gen_ag_list(self,agdef):
         """
@@ -223,9 +301,24 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
         pddfresult.to_csv(path_or_buf=fn, na_rep='0.0', float_format="%.4f")
         #r_final.to_csv(path_or_buf='result_test.csv')
 
+    def printData2Screen(data): #,fseparator=","):
+        print(data.to_string)
+        pd.display(data.to_string)
+
+
     result = run_calc()
-    save_resultsTocsv(result,"./incs/inc_" + settingsobj.casefile)
-    print("Quiting..")
+    if settingsobj.output == "stdout":
+        printData2Screen(result)#,settingsobj.output, casedtObj.fieldsep)
+    elif os.path.exists(settingsobj.output):
+        print("Output file exist, do you like to overwrite, (Y)es or (N)o? ")
+        ans = input()
+        if ans.upper() == "Y":
+            save_resultsTocsv(result, settingsobj.output)
+        else:
+            printData2Screen(result)#,settingsobj.output, casedtObj.fieldsep)
+    elif not os.path.exists(settingsobj.output):
+        save_resultsTocsv(result, settingsobj.output)
+    print("\nQuiting..")
     return result
 
 
@@ -244,8 +337,10 @@ def start_main(gender, popfilename, casefilename, popstd, agegroups, periods=Non
     result = calcASR(popdtObj,casedtObj,settingsobj)
     return result
 
-def runFromCommanLine():
-    print("Not implemented yet")
+def runFromCommanLine(*params):
+    for item in list( map( lambda x: f"{x}|" , params)):
+        print(item)
+    print("Error: Run from commandline is not implemented yet!")
 
 
 def help():
