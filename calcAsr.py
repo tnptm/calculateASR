@@ -3,7 +3,7 @@ import pandas as pd
 import sys
 
 def Version():
-    return "a0.2/02062023 toni.patama@gmail.com"
+    return "b0.3/03062023 toni.patama@gmail.com"
     #30042023 toni.patama@gmail.com"
 
 class Predefs:
@@ -19,7 +19,7 @@ class Predefs:
     def __init__(self,unitratio = 100000):
         self.unitratio = unitratio # res: 1/100000 persons
 
-        
+# data loading class for population weights and cases        
 class DataLoad:
     def __init__(self,dataname = False, filename = False, fs=","):
         self.header = self.fileHasHdr(filename)
@@ -53,7 +53,7 @@ class DataLoad:
     
     # return data from object using sex
     def selPopByGender(self,gender):
-        return self.data[(self.data.sex == gender)] if gender < 2 else data
+        return self.data[(self.data.sex == gender)] if gender < 2 else self.data
 
     # Test: is header having numbers as column names = "it means the same that pd.dataframe generated column names by number"
     def fileHasHdr(self,filename = False):
@@ -79,7 +79,7 @@ class Runsettings(Predefs):
     age_std_selected = ""
     #calculation specific definitions
      # default = All. You can limit using start and end key of "agegroupdef"
-    periods = [] #[[1998,2002],[2001,2005],[2004,2008],[2007,2012]]
+    periods = [] #[[1998,2002],[2001,2005],]
     #gender = 2 # 0 Male, 1 Female
     
 
@@ -92,14 +92,11 @@ class Runsettings(Predefs):
         self.agegroups = self.gen_ag_list(agegroups) #gen_ag_list()
         self.gender = sex # 0,1,2=both
 
-        # gen dataframe having indexis for pop stantard
-        #self.age_stds_2 = super().age_stds
+        # gen dataframe having indexes for pop stantard
+        
         self.age_std_selected = ['agegroup_index',popstd]
         #print(aglist)
-        #s = pd.DataFrame(list(range(1,len(aglist)+1))) #
-        #self.age_std_selected = s.join(pd.DataFrame(aglist),rsuffix='agestd_')
-        #self.age_std_selected.columns = ['wstdi']
-
+        
         self.popfile = popfilename
         self.casefile = casefilename
 
@@ -189,7 +186,6 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
             #print(merged_res)
             
             # Add agestd weight by age group using wstdi (pd.dataframe)
-            #r = merged_res.merge(settingsobj.age_stds[settingsobj.age_std_selected]  , left_on=['agegroup'], right_on=['agegroup_index']).reset_index()
             r = merged_res.merge(settingsobj.age_stds[settingsobj.age_std_selected], left_on=['agegroup'], right_on = ['agegroup_index'])
             
             # calc age stantard rate
@@ -237,27 +233,21 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
 
 def start_main(gender, popfilename, casefilename, popstd, agegroups, periods=None, periodlength=5, periodstep=2):
     popdtObj = DataLoad("pop", popfilename)
-    casedtObj = Dataload("case", casefilename)
+    casedtObj = DataLoad("case", casefilename)
     # loop this function when making several similar calculations of list of 
     # settings class init: sex,popfilename,casefilename,popstd = 'world',agegroups 1-18
     settingsobj = Runsettings(gender, popfilename, casefilename, popstd, agegroups ) 
     if periods == None:
-        settingsobj.generatePeriodsAuto( popdata.data, periodlength, periodstep )
+        settingsobj.generatePeriodsAuto( popdtObj.data, periodlength, periodstep )
     else:
         settingsobj.periods = periods
-    result = calcASR(popdtObj,casedtObj,settngsobj)
+    result = calcASR(popdtObj,casedtObj,settingsobj)
     return result
 
 def runFromCommanLine():
     print("Not implemented yet")
 
-# municipality list: All
-#r_final = popdt[['municid','sex']].groupby('municid').agg('sex').reset_index()
 
-# here is supposed that data have all 18 agegroups defined
-#agsascols = popdt[['year','municid','agegroup','pop']].groupby(['year','municid','agegroup']).sum('pop').unstack(level=-1)
-#nd = agsascols.add_prefix('a_')
-#nd = nd.a_pop.reset_index()
 def help():
     print("""
     
@@ -274,7 +264,6 @@ if __name__ == '__main__':
     elif len(sys.argv) and len(sys.argv)>=3:
         runFromCommanLine(*sys.argv)
     else:    
-        Print("""
+        print("""
     No Arguments Try Again. "-h" for help
     """)
-    # else run as python module directly
