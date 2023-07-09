@@ -21,7 +21,7 @@ def runAsr(gender, popfile, casefile, outputfn, periods=None, popstd='europe', a
     else:
         # gender = 1 (females)
         #outputfile = "incs/inc_" + casefile
-        setting = Runsettings( gender, "Population_Ragusa_Caltanissetta.csv", casefile, outputfn, popstd='europe', agegroups='1-18')
+        setting = Runsettings( gender, popfile, casefile, outputfn, popstd='europe', agegroups='1-18')
         # define periods
         if periods:
             setting.generatePeriodsAuto( popdata.data, periods["plength"], periods["pstep"] )
@@ -38,5 +38,5 @@ periods = {
     "pstep" : 2
 }
 
-#result = runAsr(gender, "Population_Ragusa_Caltanissetta.csv", casefile, "stdout", periods, 'europe', '[1-18]')
-result = runAsr(gender, "Population_Ragusa_Caltanissetta.csv", casefile, 'incs/incC713.csv', periods, 'europe', '[1-18]')
+#result = runAsr(gender, "population.csv", casefile, "stdout", periods, 'europe', '[1-18]')
+result = runAsr(gender, "population.csv", casefile, 'incs/incC713.csv', periods, 'europe', '[1-18]')
