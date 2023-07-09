@@ -6,7 +6,7 @@ import os.path
 #print(sys.argv)
 
 def Version():
-    return "b0.3/07072023 toni.patama@gmail.com"
+    return "b0.4/07072023 toni.patama@gmail.com"
     #30042023 toni.patama@gmail.com"
 
 class Predefs:
@@ -161,7 +161,7 @@ class Runsettings(Predefs):
     #gender = 2 # 0 Male, 1 Female
     
 
-    def __init__(self, sex, popfilename, casefilename, popstd='world', agegroups="1-18",unitratio=100000, outputfn = "stdout"):  #agegroups 1-3,5,7-9...
+    def __init__(self, sex, popfilename, casefilename, outputfn, popstd='world', agegroups="1-18", unitratio=100000 ):  #agegroups 1-3,5,7-9...
         super().__init__(unitratio)
         """
          preparations
@@ -303,7 +303,7 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
 
     def printData2Screen(data): #,fseparator=","):
         print(data.to_string)
-        pd.display(data.to_string)
+        #pd.display(data.to_string)
 
 
     result = run_calc()
@@ -347,8 +347,79 @@ def help():
     print("""
     
     Help:
-    
+-------------------------------------------------------------------    
+\tUsed as an library in Python script:
+\t1. simplified sample of run script:
+
+from calcAsr import Runsettings,DataLoad,calcASR
+import sys
+import pandas as pd
+
+# population weights:
+popdata = DataLoad("pop",popfile)
+popdata.execute()
+          
+# cancer cases
+casedata = DataLoad("case","casefile.csv")
+casedata.execute()          
+
+# create settings
+settingObj = Runsettings( 
+        gender, 
+        pop weight: "Population.csv", 
+        case file name: (csv), 
+        output filename: ["stdout" OR output "filename.csv"],
+        age standard: ['world' OR 'europa'],
+        age groups '1-18')
+
+# define periods automatically (sample: 10 years each with 5 year overlapping). Population data is used as reference of of all the years included 
+setting.generatePeriodsAuto( popdata.data, 10, 5 )
+          
+# result (pandas dataFrame) in variable
+result = calcASR( popdata, casedata, setting )       
+          
+-------------------------------------------------------------------
+
+Data must include the following aggragated data of population and cases
+
+Population
+----------
+columns:  cntryid (=1 if only one),
+          year,
+          sex,
+          agegroup,
+          municid,
+          pop          
+
+Cases
+-----
+columns:  cntryid (=1 if only one),
+          year,
+          sex,
+          agegroup,
+          municid,
+          cases          
+
+
     """)
+    print("""\t Here are some more info about fields used in data:
+    
+    Population:
+        'year':     "Population year",
+        'sex':      "Gender (0:male,1:female,2:both,3:unspecified)",
+        'agegroup': "Population age group (5-year) by gender (1-18)",
+        'municid':  "Municipality number or any geographical unit",
+        'pop':      "Population or population weight or similar weight"
+
+    Cases:
+        'year':     "Diagnose year",
+        'sex':      "Gender (0:male,1:female,2:both,3:unspecified)",
+        'agegroup': "5-year age group where the person is at diagnose (1-18)",
+        'municid':  "Municipality number or any geographical unit",
+        'cases':    "Diagnose, death or other cases in aggregated groups"                     
+
+""")
+    #print(Predefs.data_hdr_info)
     print(Version())
 
 

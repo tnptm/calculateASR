@@ -1,21 +1,32 @@
-Reimplement more popular language the calc_inc.pl. 
-It will be python module, and it should be used as a part of 
-control python script, where data is loaded and settings defined for
-every project. It will be better for auto documentation of projects
+Reimplement Calc_inc (Calclulate incidences) using more popular prorgramming language (Python) than Perl, which made calculation faster however.
 
+Script is calculatin age standardized rates of periods of years, like 2000-2005 over even tens of years. The periods can overlap with each others 
+i.e 2000-2010,2005-2015 etc.
 
-calcAsr.py on nyt pääohjelma, jota kehitetään ja ajoscriptissä tehdään tarvittavat asetukset. Moduuli olisi hyvä olla ajettavissa myös itsenäisesti
-Siinä täytyisi olla funktio, joka ottaa vastaan kaikki parametrit. Tämä on myös ohjelman käytön helppouden kannalta välttämätön vaihtoehto. Siinä
-yksi prosessi käynnistyy yhdellä funktiolla. Prosessi itsessään ei ole aivan optimoitu toistuvaan sarja-ajoon.
+It will be python kind of library which can be used part of other scripts like batch scripts. It needs a 
+control script, where library classes and functions are called and settings defined for
+every run. This batch script works as an documentations of what was made for calculation.
 
-Sen pitäisi olla siten optimoitu, että sarja-ajona esimerkiksi väestödataa ei tarvitse ajaa toistuvasti, kun taas ajokohtaiset tiedot on määritettävä
-funktio kutsussa.
+Library is in calcAsr.py and it has a sample of the batch script runAsr.py. The library will be possible to run later stand alone.
 
-Eli erikseen asetetaan globaalit asetukset 
-1. settingsobjektiin (periodit, väestöstandardi, )
-2. väestödata objektiin
-seuraava vaihe toistetaan:
-3. kutsu ajofunktiota, joka
-    - lataa casedatan
-    - määrittelee sukupuolen (settingsobj)
-    - käynnistää laskennan
+INSTALLING
+
+To run these files, you would need python 3 version installed (python.org) on your computer. And you have to isntall also additional
+libraries for it numpy and pandas.
+
+They can be installed from command line using pip. It is recommended to use virtual environment for this purpose as shown below (Linux):
+
+cd installdir
+python -m venv venv
+. venv/bin/activate
+pip install pandas
+
+# Then runnning the code is possible:
+
+python runAsr.py case_file.csv
+
+Some optimizations to code can be done still. However this kind of solution helps to minimize running the same code without purpose. For example
+usually population data is always the same. Only cancer type is changing. So population is loaded to memory only once. Then repeating calculations using that for
+all the cancer types will be more fluent.
+
+This was last updated 8.7.2023 by toni.patama@gmail.com
