@@ -1,5 +1,5 @@
-# Calculate Age-standardized Rates (ASR) of Incidene or Mortality
-Python script for calculating Age Standard Rates of Cancer Incidence and Mortality
+# Calculate Age-standardized Rates (ASR)
+Python script for calculating Age-standardized Rates of Cancer Incidence and Mortality
 
 Reimplement Calc_inc (Calclulate incidences) using more popular prorgramming language (Python) than Perl, which made calculation faster however.
 
