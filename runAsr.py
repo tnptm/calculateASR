@@ -5,7 +5,14 @@ import pandas as pd
 
 
 def runAsr(gender, popfile, casefile, outputfn, periods=None, popstd='europe', agegroups='[1-18]' ):
-    # load datas
+    """
+        Loading datas and settings
+        
+        runAsr( gender, population-filename, cases-filename, output-filename, predefined-periods, population-standard:'europe'|'world', age-groups)
+        
+        Function runAsr is helper interface for the main function calcASR. It loads datas and defines
+        settings to be able to calculate and return meaningful results
+    """
     popdata = DataLoad("pop",popfile)
     popdata.execute()
     #casedata = DataLoad("case","C713.csv")
