@@ -6,6 +6,9 @@ import os.path
 #print(sys.argv)
 
 def Version():
+    """
+        Version String
+    """
     return "b0.4/07072023 toni.patama@gmail.com"
     #30042023 toni.patama@gmail.com"
 
@@ -37,17 +40,27 @@ class Predefs:
     }
 
     def printHeaderInfo(self,type):
+        """ Prints header info based on data-type
+        """
         hdrInfo = self.data_hdr_info[type]
         for columnName,columnInfo in hdrInfo.items():
             print(f"{columnName} : {columnInfo}\n")
 
     def __init__(self,unitratio = 100000):
+        """Constructor of Predefs class
+        
+            It is having some default settings and info for the runs, like format of datas to be used, age standards etc.
+        """
         self.unitratio = unitratio # res: 1/100000 persons
 
 # data loading class for population weights and cases        
 class DataLoad:
     data=[]
     def __init__(self,dataname = None, filename = False, fs=","):
+        """ Dataloader class
+
+        Loads and prepares the data to be used for the main class calcASR
+        """
         self.predefs = Predefs()
         self.header = self.fileHasHdr(filename) ## Should require header in csv, because then data can be real pandas dataframe
         self.fieldsep = fs
@@ -153,6 +166,10 @@ class DataLoad:
 
 
 class Runsettings(Predefs):
+    """ Settings class: 
+        
+        Includes unique info for every run. 
+    """
     #definitions
     age_std_selected = ""
     #calculation specific definitions
@@ -228,6 +245,11 @@ class Runsettings(Predefs):
 
 # calculation function. Every parameter should be readable from public Objects: datas, settings
 def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
+    """Main function: calcASR
+
+    Calculates from inputdata with settings age standard rates of incidence or mortality used in epidemiology.
+    
+    """
     # datas selected by gender (data obj have usually bot sexes)
     popdt = popdtObj.selPopByGender(settingsobj.gender)
     casedt = casedtObj.selPopByGender(settingsobj.gender)
@@ -296,12 +318,18 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
         return r_final.drop(columns='municid_').set_index('municid')
             
     def save_resultsTocsv(pddfresult, fn):
+        """
+        Saving results to file
+        """
         # fn = filename to save rates using pandas
         print("Saving the result..")
         pddfresult.to_csv(path_or_buf=fn, na_rep='0.0', float_format="%.4f")
         #r_final.to_csv(path_or_buf='result_test.csv')
 
     def printData2Screen(data): #,fseparator=","):
+        """
+        Print results to standard output
+        """
         print(data.to_string)
         #pd.display(data.to_string)
 
@@ -325,6 +353,9 @@ def calcASR(popdtObj,casedtObj,settingsobj): #popdt,casedt):
 # Main function for single run
 
 def start_main(gender, popfilename, casefilename, popstd, agegroups, periods=None, periodlength=5, periodstep=2):
+    """
+    Starter function
+    """
     popdtObj = DataLoad("pop", popfilename)
     casedtObj = DataLoad("case", casefilename)
     # loop this function when making several similar calculations of list of 
@@ -338,12 +369,19 @@ def start_main(gender, popfilename, casefilename, popstd, agegroups, periods=Non
     return result
 
 def runFromCommanLine(*params):
+    """
+    Running from command line
+    NOT IMPLEMENTED YET
+    """
     for item in list( map( lambda x: f"{x}|" , params)):
         print(item)
     print("Error: Run from commandline is not implemented yet!")
 
 
 def help():
+    """
+    Help function to be called from commandline
+    """
     print("""
     
     Help:
