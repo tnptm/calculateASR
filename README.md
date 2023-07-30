@@ -3,7 +3,7 @@ Python script for calculating Age-standardized Rates of Cancer Incidence and Mor
 
 Reimplement Calc_inc (Calclulate incidences) using more popular prorgramming language (Python) than Perl, which made calculation faster however.
 
-Script is calculatin age standardized rates of periods of years, like 2000-2005 over even tens of years. The periods can overlap with each others 
+Script is calculating age standardized rates of periods of years, like 2000-2005 over even tens of years. The periods can overlap with each others 
 i.e 2000-2010,2005-2015 etc.
 
 It will be python kind of library which can be used part of other scripts like batch scripts. It needs a 
